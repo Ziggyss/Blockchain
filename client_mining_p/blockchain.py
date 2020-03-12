@@ -126,27 +126,63 @@ blockchain = Blockchain()
 def mine():
     data = request.get_json()
     # check for the proof and the id in the data
-    if "proof" in data and "id" in data:
-        # if both are present, then forge a new block
-        # the previous hash will now be the hash of the last block
-        previous_hash = blockchain.hash(blockchain.last_block)
-        # make the new block, passing in the proof and the previous hash
-        block = blockchain.new_block(data["proof"], previous_hash)
-        response = {
-            "message": "New Block Forged",
-            "block": block
-        }
-    # if one or both items are missing - return an error
-    else:
-        response = {
-            "message": "Something went wrong. Block was not mined successfully."
-        }
+    # Tom's solution:
+    required = ['proof', 'id']
+    # if values from data are not in required
+    if not all(k in data for k in required):
+        # then send a json message of missing values
+        response = {'message': "Missing Values"}
+        # return a 400 error
         return jsonify(response), 400
+    # get the submitted proof from data
+    submitted_proof = data.get('proof')
+    # determine if proof is valid
+    last_block = blockchain.last_block
+    last_block_string = json.dumps(last_block, sorted_keys=True)
+    if blockchain.valid_proof(last_block_string, submitted_proof):
+        # forge the new block
+        previous_hash = blockchain.hash(last_block)
+        block = blockchain.new_block(submitted_proof, previous_hash)
+        # build a response dictionary 
+       
 
-    # # Run the proof of work algorithm to get the next proof
+        response = {
+        'message': "New Block Forged",
+        'index': block['index'],
+        'transactions': block['transactions'],
+        'proof': block['proof'],
+        'previous_hash': block['previous_hash']}
+
+        #  return the response
+        return jsonify(response), 200
+    # otherwise
+    else:
+        # send a json message that the proof was invalid
+        response = {'message': "Proof was invalid or already submitted"}
+
+
+    # Below this is where I got to myself - I forgot to check the proof to see if it was valid!          
+    # if "proof" in data and "id" in data:
+    #     # if both are present, then forge a new block
+    #     # the previous hash will now be the hash of the last block
+    #     previous_hash = blockchain.hash(blockchain.last_block)
+    #     # make the new block, passing in the proof and the previous hash
+    #     block = blockchain.new_block(data["proof"], previous_hash)
+    #     response = {
+    #         "message": "New Block Forged",
+    #         "block": block
+    #     }
+    # # if one or both items are missing - return an error
+    # else:
+    #     response = {
+    #         "message": "Something went wrong. Block was not mined successfully."
+    #     }
+    #     return jsonify(response), 400
+
+    # # # Run the proof of work algorithm to get the next proof
     # proof = blockchain.proof_of_work(blockchain.last_block)
 
-    # # Forge the new Block by adding it to the chain with the proof
+    # # # Forge the new Block by adding it to the chain with the proof
     # previous_hash = blockchain.hash(blockchain.last_block)
     # block = blockchain.new_block(proof, previous_hash)
 
